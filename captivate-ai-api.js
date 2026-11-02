@@ -106,6 +106,7 @@ The starterHtml value must contain the complete HTML document, including embedde
 Do not use Markdown fences, comments outside JSON, trailing commas, or explanatory text outside JSON.
 Never invent real business facts, testimonials, contact details, prices, certifications, statistics, or working integrations. Clearly label sample content and demo-only forms.
 Make the page mobile-first, accessible, responsive at 320px, and suitable to save as one .html file and open directly in a browser.
+Treat the three supplied HEX colour values as mandatory design tokens. Use primaryColor for primary brand elements and CTAs, secondaryColor for supporting surfaces/backgrounds, and accentColor for text, headings and contrast accents. Do not substitute, approximate, or introduce a competing dominant palette. Define CSS custom properties for all three exact HEX values and use them consistently.
 Do not reference local CSS/JS files, CDNs, libraries, remote fonts, or missing image assets. Use CSS or inline SVG for visual elements.
 For any feature requiring a server, database, payment processor, account system, or external API, explain the requirement and do not pretend it works in a static file.
 Keep the JSON syntactically valid and starterHtml concise enough to fit the requested output limit.`,
@@ -1293,6 +1294,9 @@ function websiteRequestFromBody(body) {
     pages: cleanText(body.pages || body.requestedPages, 3000),
     features: cleanText(body.features || body.pagesFeatures || "", 5000),
     brand: cleanText(body.brand || body.brandDirection || "", 2000),
+    primaryColor: /^#[0-9a-fA-F]{6}$/.test(String(body.primaryColor || "")) ? String(body.primaryColor).toUpperCase() : "#8B5CF6",
+    secondaryColor: /^#[0-9a-fA-F]{6}$/.test(String(body.secondaryColor || "")) ? String(body.secondaryColor).toUpperCase() : "#FFFFFF",
+    accentColor: /^#[0-9a-fA-F]{6}$/.test(String(body.accentColor || "")) ? String(body.accentColor).toUpperCase() : "#111827",
     extra: cleanText(body.extra || body.extraInstructions || "", 4000)
   };
 }
@@ -1314,10 +1318,9 @@ function websiteFallbackHtml(request) {
   const type = websiteEscapeHtml(request.websiteType || "Business Website");
   const brief = websiteEscapeHtml(request.idea || "Explore our services and contact us.");
   const details = websiteEscapeHtml(request.features || "Add your products or services here.");
-  const brandText = `${request.style || ""} ${request.brand || ""}`.toLowerCase();
-  const greenYellow = /green|yellow/.test(brandText);
-  const accent = greenYellow ? "#279447" : "#6d28d9";
-  const soft = greenYellow ? "#ffe16b" : "#ede9fe";
+  const accent = request.primaryColor || "#8B5CF6";
+  const soft = request.secondaryColor || "#FFFFFF";
+  const ink = request.accentColor || "#111827";
 
   return `<!doctype html>
 <html lang="en">
@@ -1327,7 +1330,7 @@ function websiteFallbackHtml(request) {
 <meta name="description" content="${name} — ${type}">
 <title>${name}</title>
 <style>
-:root{--accent:${accent};--soft:${soft};--ink:#172033;--muted:#5b6475;--paper:#fff;--surface:#f4f6fa}
+:root{--primary:${accent};--secondary:${soft};--accent:${ink};--soft:${soft};--ink:${ink};--muted:#5b6475;--paper:${soft};--surface:color-mix(in srgb,${soft} 92%,${accent})}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
 body{margin:0;font:16px/1.6 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--ink);overflow-wrap:anywhere}
@@ -1489,6 +1492,26 @@ function websiteMakeHtmlSafer(html, request) {
       /<\/style>/i,
       '.image-placeholder{min-height:120px;display:grid;place-items:center;padding:16px;background:#eef2f7;color:#475569;border:1px dashed #94a3b8;border-radius:12px;text-align:center}*,*::before,*::after{box-sizing:border-box}img,video,iframe{max-width:100%}body{overflow-wrap:anywhere}@media(max-width:640px){nav{flex-wrap:wrap}button,a{touch-action:manipulation}} </style>'
     );
+  }
+
+  // Enforce the user's exact selected palette after model CSS so it cannot be silently replaced.
+  const primary = request.primaryColor || "#8B5CF6";
+  const secondary = request.secondaryColor || "#FFFFFF";
+  const accent = request.accentColor || "#111827";
+  const paletteCss = `
+:root{--primary:${primary}!important;--secondary:${secondary}!important;--accent:${accent}!important;--captivate-primary:${primary}!important;--captivate-secondary:${secondary}!important;--captivate-accent:${accent}!important}
+header,footer,.site-header,.site-footer{background-color:var(--captivate-primary)!important;color:#fff}
+button,.button,.btn,.cta{background-color:var(--captivate-primary)!important;color:#fff;border-color:var(--captivate-primary)!important}
+a{color:var(--captivate-primary)}
+.hero,.hero-section{background-color:var(--captivate-secondary)!important;color:${accent}}
+.card,.product,.service,.testimonial,.feature-card{border-color:color-mix(in srgb,var(--captivate-primary) 28%,transparent)}
+h1,h2,h3,.logo,.eyebrow{color:var(--captivate-accent)}
+input:focus,textarea:focus,select:focus{outline-color:var(--captivate-primary);border-color:var(--captivate-primary)}
+`;
+  if (/<\/style>/i.test(out)) {
+    out = out.replace(/<\/style>/i, `${paletteCss}</style>`);
+  } else {
+    out = out.replace(/<\/head>/i, `<style>${paletteCss}</style></head>`);
   }
 
   // Ensure mobile viewport metadata exists.
@@ -1755,8 +1778,9 @@ async function generateWebsiteBuilder(env, body) {
   if (!request.idea) throw new Error("Website idea is required.");
 
   const schemaKeys = "project,sitemap,pages,architecture,components,features,mvpFeatures,futureFeatures,dataModel,forms,responsive,seo,accessibility,security,starterHtml,buildPrompt,assumptions,nextSteps";
-  const brief = `WEBSITE BRIEF\nIdea: ${request.idea}\nAudience: ${request.targetAudience || "Not specified"}\nType: ${request.websiteType}\nStyle: ${request.style}\nPages: ${request.pages || "Not specified"}\nFeatures: ${request.features || "Not specified"}\nBrand: ${request.brand || "Not specified"}\nExtra: ${request.extra || "Not specified"}`;
-  const instruction = `Create a complete, attractive, functional standalone website that can be downloaded as one HTML file and opened directly in Chrome, including Android Chrome.\n\nReturn one valid JSON object with exactly these top-level keys: ${schemaKeys}. Do not wrap it in Markdown. Every key must be present. Use arrays for sitemap, pages, components, features, mvpFeatures, futureFeatures, forms, responsive, accessibility, security, assumptions and nextSteps. Use objects for project, architecture, dataModel and seo. Each pages item must contain name,path,purpose,sections,primaryCTA,notes.\n\nCRITICAL HTML REQUIREMENTS for starterHtml:\n1. Include a complete document beginning with <!doctype html> and ending with </html>, with html, head and body elements.\n2. Put all CSS in one or more inline style elements and all necessary JavaScript in inline script elements.\n3. Do not link styles.css, app.js, other local files, CDNs, frameworks, libraries, remote fonts, or remote images. Use CSS shapes, gradients or inline SVG for visuals.\n4. Use in-page navigation anchors only (for example #home and #contact), not server routes such as /about.\n5. Build the requested pages/sections in one-page navigation. Use the requested brand/style where supplied.\n6. Every visible button/control must have a meaningful working action. Do not add fake cart, booking, payment, login or dashboard functionality.\n7. Forms must validate input and clearly say that submissions are not stored or sent unless a real backend is provided. Never claim a message was sent or stored.\n8. Include mobile viewport metadata, responsive mobile-first CSS, semantic HTML, labels, keyboard focus styles, readable contrast and no horizontal overflow at 320px.\n9. Do not invent phone numbers, addresses, testimonials, reviews, prices, credentials or integrations. Use clearly marked placeholders where needed.\n10. Keep starterHtml below 25000 characters. Escape JSON strings correctly, especially quotes and newlines.\n\nFor features needing a server, database, payment processor or external API, describe the required integration in architecture/buildPrompt and mark it as not connected in the static prototype.\n\n${brief}\n\nThe starterHtml field is the actual website source code, not a description. Return valid JSON only.`;
+  const brief = `WEBSITE BRIEF\nIdea: ${request.idea}\nAudience: ${request.targetAudience || "Not specified"}\nType: ${request.websiteType}\nStyle: ${request.style}\nPages: ${request.pages || "Not specified"}\nFeatures: ${request.features || "Not specified"}\nBrand direction: ${request.brand || "Not specified"}\nExact primary HEX: ${request.primaryColor}\nExact secondary HEX: ${request.secondaryColor}\nExact accent HEX: ${request.accentColor}\nExtra: ${request.extra || "Not specified"}`;
+  const instruction = `Create a complete, attractive, functional standalone website that can be downloaded as one HTML file and opened directly in Chrome, including Android Chrome.\n\nReturn one valid JSON object with exactly these top-level keys: ${schemaKeys}. Do not wrap it in Markdown. Every key must be present. Use arrays for sitemap, pages, components, features, mvpFeatures, futureFeatures, forms, responsive, accessibility, security, assumptions and nextSteps. Use objects for project, architecture, dataModel and seo. Each pages item must contain name,path,purpose,sections,primaryCTA,notes.\n\nCRITICAL HTML REQUIREMENTS for starterHtml:\n1. Include a complete document beginning with <!doctype html> and ending with </html>, with html, head and body elements.\n2. Put all CSS in one or more inline style elements and all necessary JavaScript in inline script elements.\n3. Do not link styles.css, app.js, other local files, CDNs, frameworks, libraries, remote fonts, or remote images. Use CSS shapes, gradients or inline SVG for visuals.\n4. Use in-page navigation anchors only (for example #home and #contact), not server routes such as /about.\n5. Build the requested pages/sections in one-page navigation. Use the requested brand/style where supplied.
+5a. EXACT COLOUR COMPLIANCE: use primary ${request.primaryColor}, secondary ${request.secondaryColor}, and accent ${request.accentColor} exactly. Define CSS variables --primary, --secondary and --accent with those exact values. Apply the palette to header, footer, navigation, buttons, links, headings, cards, forms and hover/focus states. Do not replace the palette with green, blue, purple or any other colour unless that exact HEX was supplied.\n6. Every visible button/control must have a meaningful working action. Do not add fake cart, booking, payment, login or dashboard functionality.\n7. Forms must validate input and clearly say that submissions are not stored or sent unless a real backend is provided. Never claim a message was sent or stored.\n8. Include mobile viewport metadata, responsive mobile-first CSS, semantic HTML, labels, keyboard focus styles, readable contrast and no horizontal overflow at 320px.\n9. Do not invent phone numbers, addresses, testimonials, reviews, prices, credentials or integrations. Use clearly marked placeholders where needed.\n10. Keep starterHtml below 25000 characters. Escape JSON strings correctly, especially quotes and newlines.\n\nFor features needing a server, database, payment processor or external API, describe the required integration in architecture/buildPrompt and mark it as not connected in the static prototype.\n\n${brief}\n\nThe starterHtml field is the actual website source code, not a description. Return valid JSON only.`;
 
   let aiResponse;
   try {
