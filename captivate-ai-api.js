@@ -4,7 +4,7 @@
    Stable Core Engine + App Builder + Code Generation Assistant
 ========================================================= */
 
-const API_VERSION = "8.4";
+const API_VERSION = "8.5";
 
 /*
    v7.5 changes the image engine to the Cloudflare-hosted
@@ -104,11 +104,11 @@ Your primary deliverable is a complete, usable, standalone HTML website, not mer
 Return exactly one valid JSON object matching the keys and requirements in the user's instruction.
 The starterHtml value must contain the complete HTML document, including embedded CSS and any necessary inline JavaScript.
 Do not use Markdown fences, comments outside JSON, trailing commas, or explanatory text outside JSON.
-Never invent real business facts, testimonials, contact details, prices, certifications, statistics, or working integrations. Clearly label sample content and demo-only forms.
+Never invent real business facts, testimonials, contact details, prices, certifications, statistics, or working integrations. Clearly label sample content and demo-only forms. Never invent phone numbers, WhatsApp numbers, email addresses, or booking URLs.
 Make the page mobile-first, accessible, responsive at 320px, and suitable to save as one .html file and open directly in a browser.
 Treat the three supplied HEX colour values as mandatory design tokens. Use primaryColor for primary brand elements and CTAs, secondaryColor for supporting surfaces/backgrounds, and accentColor for text, headings and contrast accents. Do not substitute, approximate, or introduce a competing dominant palette. Define CSS custom properties for all three exact HEX values and use them consistently.
-Do not reference local CSS/JS files, CDNs, libraries, remote fonts, or missing image assets. Use CSS or inline SVG for visual elements.
-For any feature requiring a server, database, payment processor, account system, or external API, explain the requirement and do not pretend it works in a static file.
+Do not reference local CSS/JS files, CDNs, libraries, remote fonts, or missing image assets. Use CSS or inline SVG for visual elements. Never put CSS var() expressions inside SVG data URLs loaded by img; use literal HEX values in embedded SVGs.
+Use real in-page anchor links for navigation calls to action such as Get Started, Book Now, Contact Us and View More. Never use alert() demo buttons or inert controls. If no verified WhatsApp number is supplied, show a clearly labelled setup placeholder linked to the contact section; never create a wa.me URL. For any feature requiring a server, database, payment processor, account system, or external API, explain the requirement and do not pretend it works in a static file.
 Keep the JSON syntactically valid and starterHtml concise enough to fit the requested output limit.`,
   "app-builder": `You are CAPTIVATE AI App Builder Assistant, a senior product architect, UX designer and software engineer.
 
@@ -1321,6 +1321,8 @@ function websiteFallbackHtml(request) {
   const accent = request.primaryColor || "#8B5CF6";
   const soft = request.secondaryColor || "#FFFFFF";
   const ink = request.accentColor || "#111827";
+  const primaryInk = websiteReadableText(accent, ink);
+  const secondaryInk = websiteReadableText(soft, ink);
 
   return `<!doctype html>
 <html lang="en">
@@ -1330,34 +1332,36 @@ function websiteFallbackHtml(request) {
 <meta name="description" content="${name} — ${type}">
 <title>${name}</title>
 <style>
-:root{--primary:${accent};--secondary:${soft};--accent:${ink};--soft:${soft};--ink:${ink};--muted:#5b6475;--paper:${soft};--surface:color-mix(in srgb,${soft} 92%,${accent})}
+ :root{--primary:${accent};--secondary:${soft};--accent:${ink};--primary-ink:${primaryInk};--secondary-ink:${secondaryInk};--text:${secondaryInk};--soft:${soft};--ink:${secondaryInk};--muted:${secondaryInk};--paper:${soft};--surface:${soft}}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
-body{margin:0;font:16px/1.6 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--ink);overflow-wrap:anywhere}
-header{position:sticky;top:0;z-index:5;background:var(--secondary);color:var(--accent);border-bottom:1px solid color-mix(in srgb,var(--accent) 18%,transparent);padding:14px max(18px,4vw);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
-.logo{font-weight:800;color:var(--accent);text-decoration:none}
+body{margin:0;font:16px/1.6 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:${secondaryInk};background:${soft};overflow-wrap:anywhere}
+header{position:sticky;top:0;z-index:5;background:${accent};color:${primaryInk};border-bottom:1px solid ${ink};padding:14px max(18px,4vw);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{font-weight:800;color:${primaryInk};text-decoration:none}
 nav{display:flex;gap:14px;flex-wrap:wrap}
-nav a{color:inherit;text-decoration:none;font-weight:650}
-.hero{padding:clamp(50px,8vw,100px) max(20px,6vw);background:linear-gradient(130deg,var(--primary),var(--accent));color:var(--secondary)}
+nav a{color:${primaryInk};text-decoration:none;font-weight:650}
+.hero{padding:clamp(50px,8vw,100px) max(20px,6vw);background:${accent};color:${primaryInk}}
 .inner,.wrap{width:min(1080px,100%);margin:auto}
-.eyebrow{color:var(--soft);font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+.eyebrow{color:${primaryInk};font-weight:800;text-transform:uppercase;letter-spacing:.12em}
 h1{font-size:clamp(2.2rem,7vw,4.5rem);line-height:1.08;margin:12px 0;max-width:900px}
 h2{font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.2;margin-top:0}
-.hero p,.intro{max-width:720px;color:inherit}
+.hero p,.intro{max-width:720px;color:${primaryInk}}
 .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
-.btn{display:inline-flex;justify-content:center;align-items:center;padding:12px 18px;border-radius:12px;background:var(--primary);color:var(--secondary);text-decoration:none;font-weight:800;border:2px solid transparent;cursor:pointer;min-height:46px}
-.btn.alt{background:transparent;color:#fff;border-color:var(--secondary);color:var(--secondary)}
+.btn{display:inline-flex;justify-content:center;align-items:center;padding:12px 18px;border-radius:12px;background:${accent};color:${primaryInk};text-decoration:none;font-weight:800;border:2px solid ${accent};cursor:pointer;min-height:46px}
+.btn.alt{background:${soft};color:${secondaryInk};border-color:${ink}}
 .section{padding:62px 18px}
-.section.alt{background:var(--surface)}
-.muted{color:var(--muted)}
+.section.alt{background:${soft}}
+.muted{color:${secondaryInk}}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:24px}
-.card{border:1px solid color-mix(in srgb,var(--primary) 24%,transparent);border-radius:16px;background:var(--secondary);color:var(--accent);padding:22px;min-width:0;box-shadow:0 8px 22px #1720330b}
+.card{border:1px solid ${ink};border-radius:16px;background:${soft};color:${secondaryInk};padding:22px;min-width:0;box-shadow:0 8px 22px #1720330b}
 .field{display:grid;gap:6px;margin:0 0 14px}
-input,textarea{width:100%;min-width:0;border:1px solid #cbd2df;border-radius:10px;padding:12px;font:inherit}
+input,textarea{width:100%;min-width:0;border:1px solid ${ink};border-radius:10px;padding:12px;font:inherit;color:${secondaryInk};background:${soft}}
 textarea{min-height:110px}
-footer{background:var(--accent);color:var(--secondary);text-align:center;padding:28px 18px}
-.notice{background:color-mix(in srgb,var(--primary) 12%,var(--secondary));padding:14px;border-radius:12px;color:var(--accent)}
-:focus-visible{outline:3px solid #f59e0b;outline-offset:3px}
+footer{background:${accent};color:${primaryInk};text-align:center;padding:28px 18px}
+.notice{background:${soft};border:1px solid ${ink};padding:14px;border-radius:12px;color:${secondaryInk}}
+:focus-visible{outline:3px solid ${ink};outline-offset:3px}
+button,input,textarea{font:inherit}label,h1,h2,h3,p,li{color:inherit}a{color:${secondaryInk}}
+.hero h1,.hero h2,.hero p,.hero a{color:${primaryInk}}
 @media(max-width:720px){
 header{align-items:flex-start;flex-direction:column}
 nav{gap:10px}
@@ -1477,22 +1481,9 @@ function websiteReadableText(background, preferred) {
 }
 function websiteMakeHtmlSafer(html, request) {
   let out = String(html || "").trim();
-  if (!out || !/<html[\s>]/i.test(out) || !/<body[\s>]/i.test(out)) return websiteFallbackHtml(request);
-
-  // Make the export self-contained: remove local stylesheet/script references.
-  out = out.replace(/<link\b(?=[^>]*\brel\s*=\s*["']?stylesheet)[^>]*>/gi, "");
-  out = out.replace(/<script\b(?=[^>]*\bsrc\s*=)[^>]*>\s*<\/script>/gi, "");
-  out = out.replace(/href\s*=\s*(["'])\/(about|services|products|portfolio|contact|home)\/?\1/gi,
-    (_, q, p) => `href="#${p.toLowerCase() === "products" ? "services" : p.toLowerCase()}"`);
-  out = out.replace(/href\s*=\s*(["'])\/\1/gi, 'href="#home"');
-
-  // Replace unavailable local image files with responsive, branded placeholders.
-  out = out.replace(/<img\b([^>]*?)\bsrc\s*=\s*(["'])(?!https?:|data:|blob:)[^"']+\2([^>]*)>/gi,
-    (match, before, quote, after) => {
-      const alt = /\balt\s*=\s*(["'])(.*?)\1/i.exec(before + " " + after);
-      const label = websiteEscapeHtml(alt && alt[2] ? alt[2] : "Image placeholder");
-      return `<div class="captivate-image-placeholder" role="img" aria-label="${label}"><span aria-hidden="true">▧</span><strong>${label}</strong><small>Add an image before publishing</small></div>`;
-    });
+  if (!out || !/<html[\s>]/i.test(out) || !/<body[\s>]/i.test(out)) {
+    return websiteFallbackHtml(request);
+  }
 
   const primary = request.primaryColor || "#8B5CF6";
   const secondary = request.secondaryColor || "#FFFFFF";
@@ -1500,26 +1491,108 @@ function websiteMakeHtmlSafer(html, request) {
   const primaryInk = websiteReadableText(primary, accent);
   const secondaryInk = websiteReadableText(secondary, accent);
   const accentInk = websiteReadableText(accent, secondary);
+
+  // A downloadable one-file website must not depend on local stylesheets or scripts.
+  out = out.replace(/<link\b(?=[^>]*\brel\s*=\s*["']?stylesheet)[^>]*>/gi, "");
+  out = out.replace(/@import\s+(?:url\()?[^;]+;/gi, "");
+  out = out.replace(/<script\b(?=[^>]*\bsrc\s*=)[^>]*>[\s\S]*?<\/script>/gi, "");
+  out = out.replace(/<script\b(?=[^>]*\bsrc\s*=)[^>]*\/?>/gi, "");
+  out = out.replace(/href\s*=\s*(["'])\/?(?:\.\/)?(about|services|products|portfolio|contact|home)(?:\.html)?\/?\1/gi,
+    (_, q, page) => `href="#${page.toLowerCase() === "products" ? "services" : page.toLowerCase()}"`);
+  out = out.replace(/href\s*=\s*(["'])\/\1/gi, 'href="#home"');
+
+  // Fix SVG data images: CSS variables do not inherit into an SVG loaded as an <img>.
+  const fixSvgData = payload => {
+    let svg = payload;
+    try { svg = decodeURIComponent(payload); } catch (_) {}
+    svg = svg
+      .replace(/var\(\s*--primary\s*\)/gi, primary)
+      .replace(/var\(\s*--secondary\s*\)/gi, secondary)
+      .replace(/var\(\s*--accent\s*\)/gi, accent);
+    return encodeURIComponent(svg);
+  };
+  out = out.replace(/(src\s*=\s*")data:image\/svg\+xml,([^"]*)"/gi,
+    (match, prefix, payload) => prefix + "data:image/svg+xml," + fixSvgData(payload) + '"');
+  out = out.replace(/(src\s*=\s*')data:image\/svg\+xml,([^']*)'/gi,
+    (match, prefix, payload) => prefix + "data:image/svg+xml," + fixSvgData(payload) + "'");
+  out = out.replace(/(src\s*=\s*["'])data:image\/svg\+xml;base64,([^"']+)(["'])/gi, (match, prefix, payload, quote) => {
+    try {
+      const svg = atob(payload)
+        .replace(/var\(\s*--primary\s*\)/gi, primary)
+        .replace(/var\(\s*--secondary\s*\)/gi, secondary)
+        .replace(/var\(\s*--accent\s*\)/gi, accent);
+      return prefix + "data:image/svg+xml;base64," + btoa(svg) + quote;
+    } catch (_) { return match; }
+  });
+
+  // Remote and local image paths are not portable in a single HTML download.
+  // Keep embedded image data; replace other sources with an honest branded placeholder.
+  out = out.replace(/<img\b([^>]*)>/gi, (tag, originalAttrs) => {
+    let attrs = originalAttrs.replace(/\s+srcset\s*=\s*(["']).*?\1/gi, "");
+    const srcMatch = /\bsrc\s*=\s*(["'])(.*?)\1/i.exec(attrs);
+    const src = srcMatch ? srcMatch[2].trim() : "";
+    if (src && /^data:image\//i.test(src)) return `<img${attrs}>`;
+    if (!src) {
+      const altMatch = /\balt\s*=\s*(["'])(.*?)\1/i.exec(attrs);
+      const label = websiteEscapeHtml(altMatch && altMatch[2] || "Image placeholder");
+      return `<div class="captivate-image-placeholder" role="img" aria-label="${label}"><span aria-hidden="true">▧</span><strong>${label}</strong><small>Add an embedded image before publishing</small></div>`;
+    }
+    const altMatch = /\balt\s*=\s*(["'])(.*?)\1/i.exec(attrs);
+    const label = websiteEscapeHtml(altMatch && altMatch[2] || "Image placeholder");
+    return `<div class="captivate-image-placeholder" role="img" aria-label="${label}"><span aria-hidden="true">▧</span><strong>${label}</strong><small>Add an embedded image before publishing</small></div>`;
+  });
+  // Remove external/local CSS image dependencies, including hero backgrounds.
+  out = out.replace(/url\(\s*(["']?)(?!data:|#)[^)]*\)/gi, "none");
+  out = out.replace(/\s+srcset\s*=\s*(["']).*?\1/gi, "");
+  out = out.replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi,
+    '<div class="captivate-image-placeholder" role="note">External embed removed from standalone export. Configure this integration before publishing.</div>');
+
+  // Replace fake demo-alert buttons with useful in-page navigation.
+  out = out.replace(/<button\b([^>]*)>([\s\S]*?)<\/button>/gi, (whole, attrs, contents) => {
+    const click = /\bonclick\s*=\s*(["'])(.*?)\1/i.exec(attrs);
+    if (!click || !/alert\s*\(/i.test(click[2])) return whole;
+    const label = contents.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    const target = /portfolio|view more|project|work/i.test(label) ? "#portfolio" :
+      /home|top/i.test(label) ? "#home" : "#contact";
+    const safeAttrs = attrs
+      .replace(/\s+onclick\s*=\s*(["']).*?\1/gi, "")
+      .replace(/\s+type\s*=\s*(["']).*?\1/gi, "");
+    return `<a${safeAttrs} href="${target}">${contents}</a>`;
+  });
+
+  // The builder has no verified phone-number field, so no generated WhatsApp URL is trusted.
+  out = out.replace(/<button\b([^>]*)>([\s\S]*?)<\/button>/gi, (whole, attrs, contents) => {
+    const click = /\bonclick\s*=\s*(["'])([\s\S]*?)\1/i.exec(attrs);
+    if (click && /(?:wa\.me\/|api\.whatsapp\.com\/send)/i.test(click[2])) {
+      return '<a class="button" href="#contact">Configure WhatsApp contact</a>';
+    }
+    return whole;
+  });
+  out = out.replace(/<a\b([^>]*href\s*=\s*["'])(?:https?:\/\/(?:wa\.me\/[^"']+|api\.whatsapp\.com\/send[^"']*))["']([^>]*)>([\s\S]*?)<\/a>/gi,
+    '<a$1#contact"$2>Configure WhatsApp contact</a>');
+  out = out.replace(/https?:\/\/(?:wa\.me\/[^\s"']+|api\.whatsapp\.com\/send[^\s"']*)/gi, "#contact");
+
   const paletteCss = `
-:root{--primary:${primary};--secondary:${secondary};--accent:${accent};--captivate-primary:${primary};--captivate-secondary:${secondary};--captivate-accent:${accent};--captivate-primary-ink:${primaryInk};--captivate-secondary-ink:${secondaryInk};--captivate-accent-ink:${accentInk}}
+:root{--primary:${primary};--secondary:${secondary};--accent:${accent};--captivate-primary:${primary};--captivate-secondary:${secondary};--captivate-accent:${accent};--captivate-primary-ink:${primaryInk};--captivate-secondary-ink:${secondaryInk};--captivate-accent-ink:${accentInk};--captivate-text:${secondaryInk}}
 html{scroll-behavior:smooth;scroll-padding-top:5rem}*,*::before,*::after{box-sizing:border-box}
-body{max-width:100%;overflow-x:hidden;overflow-wrap:anywhere}
-img,video,iframe,svg{max-width:100%}img{height:auto;object-fit:cover}
-.captivate-image-placeholder{width:100%;min-height:170px;aspect-ratio:16/10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:18px;background:color-mix(in srgb,${primary} 11%,${secondary})!important;color:${secondaryInk}!important;border:1px dashed ${primary}!important;border-radius:16px;text-align:center;font:inherit}
-.captivate-image-placeholder>span{font-size:2rem;line-height:1}.captivate-image-placeholder small{font-size:.8rem;opacity:.78}
+html,body{max-width:100%;overflow-x:hidden}body{background:${secondary}!important;color:${secondaryInk}!important;overflow-wrap:anywhere}
+h1,h2,h3,h4,h5,h6,p,li,label,small,strong{color:${secondaryInk}!important}
 header,.site-header,footer,.site-footer{background:${primary}!important;background-image:none!important;color:${primaryInk}!important}
 header a,.site-header a,footer a,.site-footer a{color:${primaryInk}!important}
+.hero,.hero-section{background:${primary}!important;background-image:none!important;color:${primaryInk}!important}
+.hero h1,.hero h2,.hero h3,.hero p,.hero a,.hero-section h1,.hero-section h2,.hero-section p{color:${primaryInk}!important}
 button,.button,.btn,.cta,[role=button],input[type=submit]{background:${primary}!important;background-image:none!important;color:${primaryInk}!important;border:1px solid ${primary}!important;text-shadow:none!important}
-.hero,.hero-section{background-color:${primary}!important;color:${primaryInk}!important}
-.hero p,.hero-section p{color:inherit!important}
-section,.section,.content-section{max-width:100%}
-.card,.product,.product-card,.service,.service-card,.testimonial,.feature-card{border-color:color-mix(in srgb,${primary} 30%,#64748b)!important;border-radius:16px;min-width:0;overflow-wrap:anywhere}
-input,select,textarea{max-width:100%;min-width:0}input:focus,textarea:focus,select:focus{outline-color:${primary};border-color:${primary}}
-:focus-visible{outline:3px solid ${primary}!important;outline-offset:3px}
+a{overflow-wrap:anywhere}a:not(.button):not(.btn):not(.cta){color:${secondaryInk}}
+.card,.product,.product-card,.service,.service-card,.testimonial,.feature-card{background:${secondary}!important;color:${secondaryInk}!important;border-color:${accent}!important;border-radius:16px;min-width:0;overflow-wrap:anywhere}
+.card h1,.card h2,.card h3,.card p,.card li,.service h2,.service h3,.service p{color:${secondaryInk}!important}
+.captivate-image-placeholder{width:100%;min-height:170px;aspect-ratio:16/10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:18px;background:${secondary}!important;color:${secondaryInk}!important;border:1px dashed ${accent}!important;border-radius:16px;text-align:center;font:inherit}
+.captivate-image-placeholder>span{font-size:2rem;line-height:1}.captivate-image-placeholder small{font-size:.8rem;opacity:.78}
+img,video,iframe,svg{max-width:100%}img{height:auto;object-fit:cover}
+input,select,textarea{max-width:100%;min-width:0;color:${secondaryInk};background:${secondary}}input:focus,textarea:focus,select:focus{outline-color:${accent};border-color:${accent}}
+:focus-visible{outline:3px solid ${accent}!important;outline-offset:3px}
 @media(max-width:700px){nav{flex-wrap:wrap;gap:.65rem}button,a{touch-action:manipulation}.grid,.products-grid,.services-grid{grid-template-columns:repeat(1,minmax(0,1fr))!important}.card,.product,.product-card{width:100%;min-width:0}}
 `;
-  if (/<\/style>/i.test(out)) out = out.replace(/<\/style>/i, `${paletteCss}</style>`);
-  else out = out.replace(/<\/head>/i, `<style>${paletteCss}</style></head>`);
+  out = out.replace(/<\/head>/i, `<style data-captivate-palette-fix>${paletteCss}</style></head>`);
 
   if (!/<meta[^>]+name=["']viewport["']/i.test(out)) {
     out = out.replace(/<head([^>]*)>/i, '<head$1><meta name="viewport" content="width=device-width,initial-scale=1">');
@@ -1529,24 +1602,24 @@ input,select,textarea{max-width:100%;min-width:0}input:focus,textarea:focus,sele
     out = out.replace(/<\/head>/i, `<meta name="description" content="${description}"></head>`);
   }
 
-  // Normalize existing year placeholders before replacing stale hard-coded footer years.
+  // Forms in a static file must never pretend to send or store data.
+  out = out.replace(/\s+onsubmit\s*=\s*(["']).*?\1/gi, "");
+  const safeFormScript = `<script>(function(){document.querySelectorAll('form').forEach(function(form){form.addEventListener('submit',function(event){event.preventDefault();var status=form.querySelector('[role="status"],.form-status,#status');if(!status){status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');form.appendChild(status);}status.textContent='Demo only: this static website does not send or store submissions. Connect a verified email address or backend before publishing.';});});})();</script>`;
+  if (/<\/body>/i.test(out)) out = out.replace(/<\/body>/i, `${safeFormScript}</body>`);
+
+  // Replace stale years and fill the footer year on every browser load.
   out = out.replace(/<span([^>]*\bid=["'](?:year|currentYear)["'][^>]*)>(?:\s*(?:19|20)\d{2}\s*)?<\/span>/gi, '<span class="captivate-current-year" data-current-year></span>');
-  // Always replace stale hard-coded years in the footer and stamp the real current year at runtime.
   const yearMarkup = '<span class="captivate-current-year" data-current-year></span>';
   if (/<footer\b[\s\S]*?<\/footer>/i.test(out)) {
     out = out.replace(/<footer\b[\s\S]*?<\/footer>/i, footer => {
       let updated = footer.replace(/(?:©|&copy;)\s*(?:19|20)\d{2}/gi, '© ' + yearMarkup);
-      updated = updated.replace(/(?:©|&copy;)\s*(?:<span[^>]*>\s*)?(?:19|20)\d{2}(?:\s*<\/span>)?/gi, '© ' + yearMarkup);
       if (!/data-current-year|captivate-current-year/.test(updated)) updated = updated.replace(/(<\/footer>)/i, '© ' + yearMarkup + ' $1');
       return updated;
     });
   }
   const yearScript = `<script>(function(){var y=String(new Date().getFullYear());document.querySelectorAll('[data-current-year],.captivate-current-year,#currentYear,#year').forEach(function(el){el.textContent=y;});})();</script>`;
-  if (/<\/body>/i.test(out)) {
-    out = out.replace(/<\/body>/i, `${yearScript}</body>`);
-  } else {
-    out += yearScript;
-  }
+  if (/<\/body>/i.test(out)) out = out.replace(/<\/body>/i, `${yearScript}</body>`);
+  else out += yearScript;
 
   const name = websiteInferName(request.idea);
   if (name && name !== "My Business" && name.length <= 100) out = out.replace(/\[BUSINESS NAME\]/gi, websiteEscapeHtml(name));
@@ -1803,7 +1876,9 @@ async function generateWebsiteBuilder(env, body) {
   const schemaKeys = "project,sitemap,pages,architecture,components,features,mvpFeatures,futureFeatures,dataModel,forms,responsive,seo,accessibility,security,starterHtml,buildPrompt,assumptions,nextSteps";
   const brief = `WEBSITE BRIEF\nIdea: ${request.idea}\nAudience: ${request.targetAudience || "Not specified"}\nType: ${request.websiteType}\nStyle: ${request.style}\nPages: ${request.pages || "Not specified"}\nFeatures: ${request.features || "Not specified"}\nBrand direction: ${request.brand || "Not specified"}\nExact primary HEX: ${request.primaryColor}\nExact secondary HEX: ${request.secondaryColor}\nExact accent HEX: ${request.accentColor}\nExtra: ${request.extra || "Not specified"}`;
   const instruction = `Create a complete, attractive, functional standalone website that can be downloaded as one HTML file and opened directly in Chrome, including Android Chrome.\n\nReturn one valid JSON object with exactly these top-level keys: ${schemaKeys}. Do not wrap it in Markdown. Every key must be present. Use arrays for sitemap, pages, components, features, mvpFeatures, futureFeatures, forms, responsive, accessibility, security, assumptions and nextSteps. Use objects for project, architecture, dataModel and seo. Each pages item must contain name,path,purpose,sections,primaryCTA,notes.\n\nCRITICAL HTML REQUIREMENTS for starterHtml:\n1. Include a complete document beginning with <!doctype html> and ending with </html>, with html, head and body elements.\n2. Put all CSS in one or more inline style elements and all necessary JavaScript in inline script elements.\n3. Do not link styles.css, app.js, other local files, CDNs, frameworks, libraries, remote fonts, or remote images. Use CSS shapes, gradients or inline SVG for visuals.\n4. Use in-page navigation anchors only (for example #home and #contact), not server routes such as /about.\n5. Build the requested pages/sections in one-page navigation. Use the requested brand/style where supplied.
-5a. EXACT COLOUR COMPLIANCE: use primary ${request.primaryColor}, secondary ${request.secondaryColor}, and accent ${request.accentColor} exactly. Define CSS variables --primary, --secondary and --accent with those exact values. Apply the palette to header, footer, navigation, buttons, links, headings, cards, forms and hover/focus states. Do not replace the palette with green, blue, purple or any other colour unless that exact HEX was supplied.\n6. Every visible button/control must have a meaningful working action. Do not add fake cart, booking, payment, login or dashboard functionality.\n7. Forms must validate input and clearly say that submissions are not stored or sent unless a real backend is provided. Never claim a message was sent or stored.\n8. Include mobile viewport metadata, responsive mobile-first CSS, semantic HTML, labels, keyboard focus styles, readable contrast and no horizontal overflow at 320px.\n9. Do not invent phone numbers, addresses, testimonials, reviews, prices, credentials or integrations. Use clearly marked placeholders where needed.\n10. Keep starterHtml below 25000 characters. Escape JSON strings correctly, especially quotes and newlines.\n\nFor features needing a server, database, payment processor or external API, describe the required integration in architecture/buildPrompt and mark it as not connected in the static prototype.\n\n${brief}\n\nThe starterHtml field is the actual website source code, not a description. Return valid JSON only.`;
+5a. EXACT COLOUR COMPLIANCE: use primary ${request.primaryColor}, secondary ${request.secondaryColor}, and accent ${request.accentColor} exactly. Define CSS variables --primary, --secondary and --accent with those exact values. Apply the palette to header, footer, navigation, buttons, links, headings, cards, forms and hover/focus states. Do not replace the palette with green, blue, purple or any other colour unless that exact HEX was supplied.\n6. Every visible button/control must have a meaningful working action. Use real in-page anchor links for navigation CTAs such as Get Started, Book Now, Contact Us and View More. Never use alert() demo buttons or inert controls. Do not add fake cart, booking, payment, login or dashboard functionality.\n7. Forms must validate input and clearly say that submissions are not stored or sent unless a real backend is provided. A static demo form may show a clear demo-only notice; never claim a message was sent or stored.
+7a. Never invent a phone number, WhatsApp number, email address or booking URL. If no verified WhatsApp number is supplied, show a clearly labelled setup placeholder linking to the contact section; never use a fabricated wa.me link.
+7b. Do not use CSS variables inside SVG data URLs loaded by img elements. Use literal HEX colours in embedded SVG data images.\n8. Include mobile viewport metadata, responsive mobile-first CSS, semantic HTML, labels, keyboard focus styles, readable contrast and no horizontal overflow at 320px.\n9. Do not invent phone numbers, addresses, testimonials, reviews, prices, credentials or integrations. Use clearly marked placeholders where needed.\n10. Keep starterHtml below 25000 characters. Escape JSON strings correctly, especially quotes and newlines.\n\nFor features needing a server, database, payment processor or external API, describe the required integration in architecture/buildPrompt and mark it as not connected in the static prototype.\n\n${brief}\n\nThe starterHtml field is the actual website source code, not a description. Return valid JSON only.`;
 
   let aiResponse;
   try {
@@ -1822,7 +1897,7 @@ async function generateWebsiteBuilder(env, body) {
   // One controlled retry is used only when the model response is empty,
   // malformed, or missing the required standalone HTML/schema essentials.
   if (validationError) {
-    const retryInstruction = `Your previous response was unusable: ${validationError}\nRegenerate the complete result from scratch. Return exactly one valid JSON object with these keys: ${schemaKeys}. The pages field must be a non-empty array. starterHtml must be a complete standalone document with <!doctype html>, html, head, body, </body>, and </html>. Keep the HTML under 18000 characters to reduce truncation. Inline all CSS and JavaScript; do not use external files, CDNs, remote images, or fake integrations. Do not explain the error. Use the exact requested palette throughout the HTML and ensure CSS gradients do not introduce unrelated brand colours. Do not use external assets or local file references.\n\n${brief}\n\nReturn JSON only.`;
+    const retryInstruction = `Your previous response was unusable: ${validationError}\nRegenerate the complete result from scratch. Return exactly one valid JSON object with these keys: ${schemaKeys}. The pages field must be a non-empty array. starterHtml must be a complete standalone document with <!doctype html>, html, head, body, </body>, and </html>. Keep the HTML under 18000 characters to reduce truncation. Inline all CSS and JavaScript; do not use external files, CDNs, remote images, external font services, fake integrations, alert() demo buttons, or fabricated contact details. Do not explain the error. Use the exact requested palette throughout the HTML and ensure CSS gradients do not introduce unrelated brand colours. Do not use external assets or local file references.\n\n${brief}\n\nReturn JSON only.`;
     try {
       aiResponse = await runAI(env, NEW_TOOL_PROMPTS["website-builder"], retryInstruction, 8192, MODELS.CODE);
     } catch (error) {
