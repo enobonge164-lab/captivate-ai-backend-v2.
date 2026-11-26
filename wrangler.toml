@@ -18,3 +18,11 @@ persist = true
 enabled = false
 [ai]
 binding = "AI"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "CRM_DB"
+database_name = "captivate-business-os-db"
+database_id = "c85e5cb0-f639-4eb2-88da-05391afecfdb"
